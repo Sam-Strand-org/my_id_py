@@ -12,13 +12,13 @@ class MyID(str):
     Класс для уникальных идентификаторов длиной 22 символа:
     - Первый символ — буква (A-Z, a-z)
     - Остальные 21 символ — буквы или цифры (A-Z, a-z, 0-9)
-    
+
     Особенности:
     1. MyID() → создаёт новый случайный uid.
     2. MyID(value) → проверяет формат переданного значения. Если неверный, кидает ValueError.
     3. MyID.derive(source) → создаёт детерминированный uid из строки source (через SHA256).
     4. Интеграция с Pydantic через __get_pydantic_core_schema__.
-    
+
     Примеры:
         MyID()             # новый случайный uid
         MyID('A123456789012345678901')  # валидный uid
@@ -32,7 +32,7 @@ class MyID(str):
     def __new__(cls, *args: Any) -> 'MyID':
         '''
         Создание нового uid.
-        
+
         Варианты:
         - MyID()             → генерируется случайный uid
         - MyID(value: str)   → проверяется валидность value
@@ -68,7 +68,8 @@ class MyID(str):
         '''
         digest = hashlib.sha256(source.encode()).digest()
         first = cls._letters[digest[0] % len(cls._letters)]
-        rest = ''.join(cls._letters_digits[b % len(cls._letters_digits)] for b in digest[1:22])
+        rest = ''.join(cls._letters_digits[b % len(
+            cls._letters_digits)] for b in digest[1:22])
         return cls(first + rest)
 
     @classmethod
@@ -80,15 +81,24 @@ class MyID(str):
             - иначе → пытается создать MyID(value) (валидация + ValueError)
         - сериализация → строка
         '''
-        def validate(value: str) -> MyID:
+        def validate(value: Any) -> 'MyID':
             if isinstance(value, cls):
                 return value
             if isinstance(value, bytes):
                 value = value.decode('utf-8')
             return cls(value)
-        return core_schema.no_info_plain_validator_function(
-            function=validate,
-            serialization=core_schema.plain_serializer_function_ser_schema(str)
+
+        return core_schema.json_or_python_schema(
+            json_schema=core_schema.no_info_after_validator_function(
+                validate,
+                core_schema.str_schema(),
+            ),
+            python_schema=core_schema.no_info_plain_validator_function(
+                validate),
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                str,
+                return_schema=core_schema.str_schema(),
+            ),
         )
 
 
@@ -138,9 +148,17 @@ class MyIDTuple(tuple):
             except Exception as e:
                 raise ValueError(f'Невалидный MyIDTuple: {e}') from e
 
-        return core_schema.no_info_plain_validator_function(
-            function=validate,
+        return core_schema.json_or_python_schema(
+            json_schema=core_schema.no_info_after_validator_function(
+                validate,
+                core_schema.union_schema([
+                    core_schema.str_schema(),
+                    core_schema.list_schema(core_schema.str_schema()),
+                ]),
+            ),
+            python_schema=core_schema.no_info_plain_validator_function(validate),
             serialization=core_schema.plain_serializer_function_ser_schema(
-                lambda v: ','.join(str(x) for x in v)
-            )
+                lambda v: ','.join(str(x) for x in v),
+                return_schema=core_schema.str_schema(),
+            ),
         )
