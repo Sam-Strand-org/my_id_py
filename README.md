@@ -12,12 +12,12 @@ Python библиотека для работы с уникальными иде
 ## Установка
 ### Способ 1: Установка из репозитория (требуется Git)
 ```bash
-pip install git+https://github.com/Sam-Strand/my_id_py.git
+pip install git+https://github.com/Sam-Strand-org/my_id_py.git
 ```
 
 ### Способ 2: Установка готового пакета (без Git)
 
-https://github.com/Sam-Strand/my_id_py/releases
+https://github.com/Sam-Strand-org/my_id_py/releases
 
 
 # MyIDTuple
